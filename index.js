@@ -1,8 +1,8 @@
-import fs from 'fs';
+import fs from 'node:fs/promises';
 import axios from 'axios';
 
 const getData = async (replacementPath, fakeMessagesPath) => {
-  const requestReplacement = fs.promises.readFile(replacementPath, "utf-8");
+  const requestReplacement = fs.readFile(replacementPath, "utf-8");
   const requestFakeMessages = axios.get(fakeMessagesPath);
 
   const [responseReplacement, responseFakeMessages] = await Promise.all([requestReplacement, requestFakeMessages]);
@@ -12,11 +12,11 @@ const getData = async (replacementPath, fakeMessagesPath) => {
   return [replacement, fakeMessages];
 };
 
-const createCorrectMessageFile = async () => {
-  const [replacement, fakeMessages] = await getData(process.argv[2], process.argv[3]);
+const buildCorrectMessages = async (replacement, fakeMessages) => {
   const replacementReverse = replacement.reverse();
   const correctMessages = [];
-  fakeMessages.map((message) => {
+
+  fakeMessages.forEach((message) => {
     let correctMessage = message;
     replacementReverse.forEach((data) => {
       if (correctMessage.includes(data.replacement)) {
@@ -27,7 +27,17 @@ const createCorrectMessageFile = async () => {
       correctMessages.push(correctMessage);
     }
   });
-  await fs.promises.writeFile("result.json", JSON.stringify(correctMessages));
+
+  return correctMessages;
+}
+
+const createCorrectMessagesFile = async () => {
+  const [replacement, fakeMessages] = await getData('./replacement.json', 'https://raw.githubusercontent.com/thewhitesoft/student-2023-assignment/main/data.json');
+  const correctMessages = await buildCorrectMessages(replacement, fakeMessages);
+
+  await fs.writeFile("result.json", JSON.stringify(correctMessages));
 };
 
-createCorrectMessageFile();
+createCorrectMessagesFile();
+
+export default createCorrectMessagesFile;
